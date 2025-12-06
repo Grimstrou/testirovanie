@@ -1,0 +1,87 @@
+version: '3'
+
+vars:
+  # Определите переменные для подключения
+  BMC_IP: localhost
+  BMC_PORT: 2443
+  BMC_USER: root
+  BMC_PASS: 0penBmc
+  BASE_URL: https://{{.BMC_IP}}:{{.BMC_PORT}}
+  AUTH_HEADER: $ curl -k -u {{.BMC_USER}}:{{.BMC_PASS}}
+
+tasks:
+  # --- Задачи для запуска тестов ---
+  test-all:
+    desc: Запустить все тесты
+    cmds:
+      - pytest test_redfish.py -v
+
+  test-authentication:
+    desc: Запустить тест аутентификации
+    cmds:
+      - pytest test_redfish.py::test_authentication -v
+
+  test-get-system-info:
+    desc: Запустить тест получения информации о системе
+    cmds:
+      - pytest test_redfish.py::test_get_system_info -v
+
+  test-power-control:
+    desc: Запустить тест управления питанием
+    cmds:
+      - pytest test_redfish.py::test_power_control -v
+
+  test-cpu-temperature:
+    desc: Запустить тест температуры CPU
+    cmds:
+      - pytest test_redfish.py::test_cpu_temperature -v -s
+
+  test-cpu-sensors:
+    desc: Запустить тест датчиков CPU
+    cmds:
+      - pytest test_redfish.py::test_cpu_sensors_redfish_vs_ipmi -v -s
+
+  # --- Задачи curl для ручной проверки последних двух тестов ---
+  curl-thermal-metrics:
+    desc: Выполнить curl для проверки Thermal Metrics (используется в test_cpu_temperature)
+    cmds:
+      - echo "Получение Thermal Metrics (используется в test_cpu_temperature):"
+      - |
+        curl -k -u {{.BMC_USER}}:{{.BMC_PASS}} {{.BASE_URL}}/redfish/v1/Chassis/chassis/ThermalSubsystem/ThermalMetrics
+
+  curl-sensors:
+    desc: Выполнить curl для проверки коллекции Sensors (используется в test_cpu_sensors_redfish_vs_ipmi)
+    cmds:
+      - echo "Получение коллекции Sensors (используется в test_cpu_sensors_redfish_vs_ipmi):"
+      - |
+        curl -k -u {{.BMC_USER}}:{{.BMC_PASS}} {{.BASE_URL}}/redfish/v1/Chassis/chassis/Sensors
+
+  # --- Вспомогательные задачи curl ---
+  curl-root:
+    desc: Выполнить curl к корневому элементу Redfish
+    cmds:
+      - echo "Получение корневого элемента Redfish:"
+      - |
+        curl -k -u {{.BMC_USER}}:{{.BMC_PASS}} {{.BASE_URL}}/redfish/v1/
+
+  curl-chassis:
+    desc: Выполнить curl к коллекции Chassis
+    cmds:
+      - echo "Получение коллекции Chassis:"
+      - |
+        curl -k -u {{.BMC_USER}}:{{.BMC_PASS}} {{.BASE_URL}}/redfish/v1/Chassis
+
+  curl-chassis-item:
+    desc: Выполнить curl к элементу Chassis
+    cmds:
+      - echo "Получение элемента Chassis 'chassis':"
+      - |
+        curl -k -u {{.BMC_USER}}:{{.BMC_PASS}} {{.BASE_URL}}/redfish/v1/Chassis/chassis
+
+  curl-system:
+    desc: Выполнить curl к системе
+    cmds:
+      - echo "Получение информации о системе:"
+      - |
+        curl -k -u {{.BMC_USER}}:{{.BMC_PASS}} {{.BASE_URL}}/redfish/v1/Systems/system
+        
